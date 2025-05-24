@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useDarkMode } from "../../components/DarkModeProvider";
 import { RainbowButton } from "../../components/magicui/rainbow-button";
 import { ShimmerButton } from "../../components/magicui/shimmer-button";
+import ChatModal from "../../components/ChatModal";
 
 const CATEGORIES = ["Textbook", "Gadget", "Clothing", "Furniture", "Service", "Other"];
 const CONDITIONS = ["new", "like new", "good", "fair", "poor"];
@@ -36,6 +37,7 @@ export default function Welcome() {
   const [loadingNotifications, setLoadingNotifications] = useState(true);
   const [bidsOnMyProducts, setBidsOnMyProducts] = useState([]);
   const [loadingBids, setLoadingBids] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
   const router = useRouter();
   const { dark, setDark } = useDarkMode();
 
@@ -370,6 +372,14 @@ export default function Welcome() {
           )}
         </div>
       </div>
+      {/* Floating Chat Button */}
+      <button
+        className="fixed bottom-8 right-8 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg z-50"
+        onClick={() => setChatOpen(true)}
+      >
+        Chat with Price Advisor
+      </button>
+      <ChatModal open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
 } 

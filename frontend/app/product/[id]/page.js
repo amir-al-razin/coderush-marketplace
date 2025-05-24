@@ -2,6 +2,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
+import ChatBox from "../../../components/ChatBox";
+import ReviewSection from "../../../components/ReviewSection";
+import ReplyBox from "../../../components/ReplyBox";
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -17,6 +20,9 @@ export default function ProductDetail() {
   const [commentInput, setCommentInput] = useState("");
   const [commentError, setCommentError] = useState("");
   const [commentSuccess, setCommentSuccess] = useState("");
+  const [chatId, setChatId] = useState(null);
+  const [showChat, setShowChat] = useState(false);
+  const [sellerInfo, setSellerInfo] = useState({});
 
   useEffect(() => {
     async function fetchProduct() {
@@ -43,6 +49,22 @@ export default function ProductDetail() {
     fetchUser();
     if (id) fetchComments();
   }, [id]);
+
+  useEffect(() => {
+    async function fetchSeller() {
+      if (product && product.user_id) {
+        const { data } = await supabase
+          .from("students")
+          .select("name,email")
+          .eq("user_id", product.user_id)
+          .single();
+        setSellerInfo(data || {});
+      } else {
+        setSellerInfo({});
+      }
+    }
+    if (product && product.user_id) fetchSeller();
+  }, [product]);
 
   const handleBidSubmit = async (e) => {
     e.preventDefault();
@@ -110,6 +132,64 @@ export default function ProductDetail() {
     if (!fetchError) setComments(data || []);
   };
 
+  const startChat = async () => {
+    if (!user || !product) return;
+    // Check for existing chat
+    let { data: chat, error: fetchError } = await supabase
+      .from("chats")
+      .select("*")
+      .eq("buyer_id", user.id)
+      .eq("seller_id", product.user_id)
+      .eq("product_id", product.id)
+      .single();
+
+    if (fetchError && fetchError.code !== "PGRST116") {
+      alert("Failed to fetch chat: " + fetchError.message);
+      return;
+    }
+
+    if (!chat) {
+      // Create new chat
+      const { data: newChat, error: insertError } = await supabase
+        .from("chats")
+        .insert({
+          buyer_id: user.id,
+          seller_id: product.user_id,
+          product_id: product.id,
+        })
+        .select()
+        .single();
+      if (insertError || !newChat) {
+        alert("Failed to create chat: " + (insertError?.message || "Unknown error"));
+        return;
+      }
+      chat = newChat;
+    }
+
+    if (!chat || !chat.id) {
+      alert("Could not start chat. Please try again.");
+      return;
+    }
+    setChatId(chat.id);
+    setShowChat(true);
+  };
+
+  const handleReply = async (commentId, replyText) => {
+    if (!replyText.trim()) return;
+    const { error } = await supabase.from("comments").update({ reply: replyText, replied_at: new Date().toISOString() }).eq("id", commentId);
+    if (error) {
+      alert("Failed to save reply: " + error.message);
+      return;
+    }
+    // Refresh comments
+    const { data, error: fetchError } = await supabase
+      .from("comments")
+      .select("*, students:user_id(name,email)")
+      .eq("product_id", id)
+      .order("created_at", { ascending: true });
+    if (!fetchError) setComments(data || []);
+  };
+
   if (loading) return <div className="flex items-center justify-center min-h-screen text-lg">Loading...</div>;
   if (!product) return <div className="flex items-center justify-center min-h-screen text-lg text-red-500">Product not found.</div>;
 
@@ -156,6 +236,27 @@ export default function ProductDetail() {
           </form>
         )
       )}
+      {user && product && user.id !== product.user_id && (
+        <>
+          <button className="mt-4 bg-blue-600 text-white px-6 py-2 rounded" onClick={startChat}>
+            Chat with Seller
+          </button>
+          {showChat && chatId && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-4 relative">
+                <button className="absolute top-2 right-2 text-xl" onClick={() => setShowChat(false)}>✕</button>
+                <ChatBox chatId={chatId} currentUserId={user.id} open={showChat} sellerName={sellerInfo.name || (sellerInfo.email?.split("@")[0]) || product.user_id} />
+              </div>
+            </div>
+          )}
+        </>
+      )}
+      {/* Seller chat management link */}
+      {user && product && user.id === product.user_id && (
+        <div className="mt-4">
+          <a href="/seller/chats" className="text-blue-600 underline">Manage All Chats</a>
+        </div>
+      )}
       {/* Comments Section */}
       <div className="w-full max-w-xl mt-10">
         <h2 className="text-lg font-semibold mb-3 text-gray-800 dark:text-white">Comments</h2>
@@ -173,6 +274,17 @@ export default function ProductDetail() {
                   <span className="text-xs text-gray-400 ml-auto">{new Date(c.created_at).toLocaleString()}</span>
                 </div>
                 <div className="text-gray-800 dark:text-gray-100">{c.content}</div>
+                {/* Reply section */}
+                {c.reply && (
+                  <div className="mt-2 ml-4 p-2 bg-blue-50 dark:bg-blue-900 rounded">
+                    <span className="font-semibold text-blue-700 dark:text-blue-300">Seller Reply:</span> {c.reply}
+                    <span className="block text-xs text-gray-400 mt-1">{c.replied_at ? new Date(c.replied_at).toLocaleString() : ""}</span>
+                  </div>
+                )}
+                {/* Only uploader can reply, and only if not already replied */}
+                {user && product && user.id === product.user_id && !c.reply && (
+                  <ReplyBox commentId={c.id} onReply={handleReply} />
+                )}
               </li>
             ))}
           </ul>
@@ -192,6 +304,7 @@ export default function ProductDetail() {
           </form>
         )}
       </div>
+      <ReviewSection productId={product.id} currentUserId={user?.id} revieweeId={product.user_id} />
     </div>
   );
 } 
