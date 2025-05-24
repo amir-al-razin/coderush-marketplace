@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 export default function Register() {
   const [form, setForm] = useState({
+    name: "",
     email: "",
     password: "",
     university: "",
@@ -44,6 +45,7 @@ export default function Register() {
     const { error: insertError } = await supabase.from("students").insert([
       {
         user_id,
+        name: form.name,
         email: form.email,
         university: form.university,
         department: form.department,
@@ -67,6 +69,7 @@ export default function Register() {
     <div className="max-w-md mx-auto mt-16 p-6 bg-white rounded shadow">
       <h2 className="text-2xl font-bold mb-4">Register</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <input name="name" type="text" placeholder="Full Name" value={form.name} onChange={handleChange} required className="border p-2 rounded" />
         <input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required className="border p-2 rounded" />
         <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required className="border p-2 rounded" />
         <input name="university" type="text" placeholder="University" value={form.university} onChange={handleChange} required className="border p-2 rounded" />

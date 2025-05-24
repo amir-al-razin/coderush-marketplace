@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
-
 @layer base {
   :root {
 
@@ -56,7 +54,17 @@
     --chart-5: 27 87% 67%;
 
     --radius: 0.5rem
-  }
+  ;
+
+    --color-1: oklch(66.2% 0.225 25.9);
+
+    --color-2: oklch(60.4% 0.26 302);
+
+    --color-3: oklch(69.6% 0.165 251);
+
+    --color-4: oklch(80.2% 0.134 225);
+
+    --color-5: oklch(90.7% 0.231 133)}
   .dark {
 
     --background: 0 0% 3.9%;
@@ -106,10 +114,26 @@
     --chart-4: 280 65% 60%;
 
     --chart-5: 340 75% 55%
+  ;
+
+    --color-1: oklch(66.2% 0.225 25.9);
+
+    --color-2: oklch(60.4% 0.26 302);
+
+    --color-3: oklch(69.6% 0.165 251);
+
+    --color-4: oklch(80.2% 0.134 225);
+
+    --color-5: oklch(90.7% 0.231 133)}
+  .theme {
+
+    --animate-rainbow: rainbow var(--speed, 2s) infinite linear;
+
+    --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+
+    --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear
   }
 }
-
-
 
 @layer base {
   * {
@@ -117,5 +141,35 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@theme inline {
+  @keyframes rainbow {
+  0% {
+    background-position: 0%;
+    }
+  100% {
+    background-position: 200%;
+    }
+  }
+  @keyframes shimmer-slide {
+  to {
+    transform: translate(calc(100cqw - 100%), 0);
+    }
+  }
+  @keyframes spin-around {
+  0% {
+    transform: translateZ(0) rotate(0);
+    }
+  15%, 35% {
+    transform: translateZ(0) rotate(90deg);
+    }
+  65%, 85% {
+    transform: translateZ(0) rotate(270deg);
+    }
+  100% {
+    transform: translateZ(0) rotate(360deg);
+    }
   }
 }

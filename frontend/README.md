@@ -48,8 +48,8 @@ This is the frontend for the Coderush Marketplace project, built with Next.js, T
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
    ```
 3. Run the development server:
-   ```bash
-   pnpm dev
+```bash
+pnpm dev
    ```
 
 ## Project Structure
