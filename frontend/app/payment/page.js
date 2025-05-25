@@ -1,13 +1,13 @@
 "use client";
-
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "../../lib/supabaseClient";
-import dynamic from "next/dynamic";
 
-export default function PaymentPage() {
+
+function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dealId = searchParams.get("dealId");
@@ -62,4 +62,12 @@ export default function PaymentPage() {
       </Card>
     </div>
   );
-} 
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading payment...</div>}>
+      <PaymentPageContent />
+    </Suspense>
+  );
+}
