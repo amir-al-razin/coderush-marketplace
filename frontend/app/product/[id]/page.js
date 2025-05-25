@@ -5,6 +5,19 @@ import { supabase } from "../../../lib/supabaseClient";
 import ChatBox from "../../../components/ChatBox";
 import ReviewSection from "../../../components/ReviewSection";
 import ReplyBox from "../../../components/ReplyBox";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Sun, Moon } from "lucide-react";
+import { useDarkMode } from "../../../components/DarkModeProvider";
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -23,6 +36,7 @@ export default function ProductDetail() {
   const [chatId, setChatId] = useState(null);
   const [showChat, setShowChat] = useState(false);
   const [sellerInfo, setSellerInfo] = useState({});
+  const { dark, setDark } = useDarkMode();
 
   useEffect(() => {
     async function fetchProduct() {
@@ -194,7 +208,11 @@ export default function ProductDetail() {
   if (!product) return <div className="flex items-center justify-center min-h-screen text-lg text-red-500">Product not found.</div>;
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 transition-colors duration-500 p-6">
+    <div className="flex flex-col items-center min-h-screen bg-background transition-colors duration-500 p-6">
+      <div className="w-full flex justify-end items-center mb-2">
+        <Switch checked={dark} onCheckedChange={setDark} className="mr-2" />
+        {dark ? <Moon className="h-5 w-5 text-yellow-400" /> : <Sun className="h-5 w-5 text-yellow-500" />}
+      </div>
       <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg shadow-2xl rounded-2xl p-8 w-full max-w-xl border border-gray-200 dark:border-gray-800 mt-10">
         {product.image_url && (
           <img src={product.image_url} alt={product.title} className="w-full h-64 object-cover rounded mb-4" />
@@ -220,17 +238,17 @@ export default function ProductDetail() {
           <div className="mt-6 text-center text-yellow-600 font-medium">You are the uploader. You cannot bid on your own product.</div>
         ) : (
           <form onSubmit={handleBidSubmit} className="mt-6 flex flex-col items-center gap-3">
-            <input
+            <Input
               type="number"
               min="1"
               step="0.01"
               value={bidAmount}
               onChange={e => setBidAmount(e.target.value)}
               placeholder="Enter your bid amount"
-              className="border p-2 rounded w-64"
+              className="w-64"
               required
             />
-            <button type="submit" className="bg-primary text-primary-foreground px-6 py-2 rounded font-medium">Place Bid</button>
+            <Button type="submit">Place Bid</Button>
             {bidError && <div className="text-red-600">{bidError}</div>}
             {bidSuccess && <div className="text-green-600">{bidSuccess}</div>}
           </form>
@@ -238,16 +256,35 @@ export default function ProductDetail() {
       )}
       {user && product && user.id !== product.user_id && (
         <>
-          <button className="mt-4 bg-blue-600 text-white px-6 py-2 rounded" onClick={startChat}>
+          <Button 
+            variant="secondary"
+            className="mt-4" 
+            onClick={startChat}
+          >
             Chat with Seller
-          </button>
+          </Button>
           {showChat && chatId && (
-            <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-4 relative">
-                <button className="absolute top-2 right-2 text-xl" onClick={() => setShowChat(false)}>✕</button>
-                <ChatBox chatId={chatId} currentUserId={user.id} open={showChat} sellerName={sellerInfo.name || (sellerInfo.email?.split("@")[0]) || product.user_id} />
-              </div>
-            </div>
+            <Dialog open={showChat} onOpenChange={setShowChat}>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center justify-between">
+                    Chat with {sellerInfo.name || (sellerInfo.email?.split("@")[0]) || "Seller"}
+                    <Button variant="ghost" size="icon" onClick={() => setShowChat(false)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </DialogTitle>
+                </DialogHeader>
+                <ChatBox 
+                  chatId={chatId} 
+                  currentUserId={user.id} 
+                  open={showChat} 
+                  sellerName={sellerInfo.name || (sellerInfo.email?.split("@")?.[0]) || product.user_id}
+                  buyerId={user.id}
+                  sellerId={product.user_id}
+                  productId={product.id}
+                />
+              </DialogContent>
+            </Dialog>
           )}
         </>
       )}
@@ -258,53 +295,84 @@ export default function ProductDetail() {
         </div>
       )}
       {/* Comments Section */}
-      <div className="w-full max-w-xl mt-10">
-        <h2 className="text-lg font-semibold mb-3 text-gray-800 dark:text-white">Comments</h2>
-        {loadingComments ? (
-          <div className="text-gray-500 dark:text-gray-300">Loading comments...</div>
-        ) : (
-          <ul className="space-y-3 mb-4">
-            {comments.map((c) => (
-              <li key={c.id} className="bg-white/80 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-800 rounded p-3 flex flex-col">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-gray-700 dark:text-gray-200">{c.students?.name || (c.students?.email?.split("@")[0]) || "User"}</span>
-                  {product && c.user_id === product.user_id && (
-                    <span className="ml-2 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full font-semibold">Seller</span>
-                  )}
-                  <span className="text-xs text-gray-400 ml-auto">{new Date(c.created_at).toLocaleString()}</span>
-                </div>
-                <div className="text-gray-800 dark:text-gray-100">{c.content}</div>
-                {/* Reply section */}
-                {c.reply && (
-                  <div className="mt-2 ml-4 p-2 bg-blue-50 dark:bg-blue-900 rounded">
-                    <span className="font-semibold text-blue-700 dark:text-blue-300">Seller Reply:</span> {c.reply}
-                    <span className="block text-xs text-gray-400 mt-1">{c.replied_at ? new Date(c.replied_at).toLocaleString() : ""}</span>
-                  </div>
-                )}
-                {/* Only uploader can reply, and only if not already replied */}
-                {user && product && user.id === product.user_id && !c.reply && (
-                  <ReplyBox commentId={c.id} onReply={handleReply} />
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-        {user && (
-          <form onSubmit={handleCommentSubmit} className="flex flex-col gap-2">
-            <textarea
-              value={commentInput}
-              onChange={e => setCommentInput(e.target.value)}
-              placeholder="Add a comment..."
-              className="border p-2 rounded w-full min-h-[60px]"
-              required
-            />
-            <button type="submit" className="self-end bg-primary text-primary-foreground px-4 py-1.5 rounded font-medium">Post</button>
-            {commentError && <div className="text-red-600 text-sm">{commentError}</div>}
-            {commentSuccess && <div className="text-green-600 text-sm">{commentSuccess}</div>}
-          </form>
-        )}
-      </div>
-      <ReviewSection productId={product.id} currentUserId={user?.id} revieweeId={product.user_id} />
+      <Card className="w-full max-w-xl mt-10">
+        <CardHeader>
+          <CardTitle>Comments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingComments ? (
+            <div className="text-gray-500 dark:text-gray-300">Loading comments...</div>
+          ) : (
+            <ScrollArea className="h-[400px]">
+              <ul className="space-y-3 mb-4">
+                {comments.map((c) => (
+                  <li key={c.id}>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-semibold text-gray-700 dark:text-gray-200">{c.students?.name || (c.students?.email?.split("@")[0]) || "User"}</span>
+                          {product && c.user_id === product.user_id && (
+                            <Badge variant="secondary">Seller</Badge>
+                          )}
+                          <span className="text-xs text-gray-400 ml-auto">{new Date(c.created_at).toLocaleString()}</span>
+                        </div>
+                        <div className="text-gray-800 dark:text-gray-100">{c.content}</div>
+                        {/* Reply section */}
+                        {c.reply && (
+                          <div className="mt-3">
+                            <Separator className="my-2" />
+                            <div className="pl-4 border-l-2 border-blue-200 dark:border-blue-800">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">Seller Reply</Badge>
+                                <span className="text-xs text-gray-400">{c.replied_at ? new Date(c.replied_at).toLocaleString() : ""}</span>
+                              </div>
+                              <p className="mt-1 text-gray-700 dark:text-gray-300">{c.reply}</p>
+                            </div>
+                          </div>
+                        )}
+                        {/* Only uploader can reply, and only if not already replied */}
+                        {user && product && user.id === product.user_id && !c.reply && (
+                          <div className="mt-3">
+                            <Separator className="my-2" />
+                            <ReplyBox commentId={c.id} onReply={handleReply} />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
+          )}
+          {user && (
+            <form onSubmit={handleCommentSubmit} className="mt-4 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="comment">Add a comment</Label>
+                <Textarea
+                  id="comment"
+                  value={commentInput}
+                  onChange={e => setCommentInput(e.target.value)}
+                  placeholder="Write your comment..."
+                  className="min-h-[100px]"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full">Post Comment</Button>
+              {commentError && <div className="text-red-600 text-sm">{commentError}</div>}
+              {commentSuccess && <div className="text-green-600 text-sm">{commentSuccess}</div>}
+            </form>
+          )}
+        </CardContent>
+      </Card>
+      {/* Review Section */}
+      <Card className="w-full max-w-xl mt-6">
+        <CardHeader>
+          <CardTitle>Reviews</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ReviewSection productId={product.id} currentUserId={user?.id} revieweeId={product.user_id} />
+        </CardContent>
+      </Card>
     </div>
   );
 } 

@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 
 export default function ReviewSection({ productId, currentUserId, revieweeId }) {
   const [reviews, setReviews] = useState([]);
@@ -38,28 +44,43 @@ export default function ReviewSection({ productId, currentUserId, revieweeId }) 
   };
 
   return (
-    <div className="w-full max-w-xl mt-10">
-      <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-white">Reviews</h3>
-      {reviews.map((r) => (
-        <div key={r.id} className="border-b py-2">
-          <div>Rating: {r.rating} / 5</div>
-          <div>{r.content}</div>
+    <div className="w-full">
+      <div className="space-y-4">
+        {reviews.length === 0 && <div className="text-muted-foreground">No reviews yet.</div>}
+        {reviews.map((r) => (
+          <Card key={r.id} className="mb-2">
+            <CardContent className="py-3 px-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="secondary">{r.rating}★</Badge>
+                <span className="text-sm text-muted-foreground ml-2">{new Date(r.created_at).toLocaleDateString()}</span>
+              </div>
+              <div className="text-base text-foreground">{r.content}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div className="mt-6">
+        <Label className="font-semibold mb-1 block">Leave a Review</Label>
+        <div className="flex items-center gap-3 mb-3">
+          <Label htmlFor="rating">Rating</Label>
+          <Select value={String(rating)} onValueChange={v => setRating(Number(v))}>
+            <SelectTrigger className="w-24">
+              <SelectValue placeholder="Rating" />
+            </SelectTrigger>
+            <SelectContent>
+              {[1,2,3,4,5].map(n => (
+                <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      ))}
-      <div className="mt-4">
-        <h4 className="font-semibold">Leave a Review</h4>
-        <select value={rating} onChange={e => setRating(Number(e.target.value))} className="border rounded p-1">
-          {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-        </select>
-        <textarea
+        <Textarea
           value={content}
           onChange={e => setContent(e.target.value)}
           placeholder="Write your review..."
-          className="border rounded p-2 w-full min-h-[60px] mt-2"
+          className="mb-3"
         />
-        <button className="bg-green-500 text-white px-4 py-2 rounded mt-2" onClick={submitReview}>
-          Submit
-        </button>
+        <Button onClick={submitReview} className="w-full">Submit</Button>
       </div>
     </div>
   );

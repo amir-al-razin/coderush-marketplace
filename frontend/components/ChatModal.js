@@ -1,64 +1,74 @@
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { X } from "lucide-react";
 
 export default function ChatModal({ open, onClose }) {
-  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [messages, setMessages] = useState([]); // {role: "user"|"advisor", text: string}
   const [loading, setLoading] = useState(false);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
+    const userMsg = { role: "user", text: input };
+    setMessages((msgs) => [...msgs, userMsg]);
     setLoading(true);
-    setMessages((msgs) => [...msgs, { from: "user", text: input }]);
     try {
-      const res = await fetch("http://localhost:8000/chat/advisor", {
+      const res = await fetch("http://192.168.152.82:8000/chat/advisor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: input }),
       });
-      if (!res.ok) throw new Error("Backend error");
       const data = await res.json();
-      setMessages((msgs) => [...msgs, { from: "bot", text: data.response }]);
-    } catch (err) {
-      setMessages((msgs) => [...msgs, { from: "bot", text: "Error contacting chatbot." }]);
+      setMessages((msgs) => [...msgs, { role: "advisor", text: data.response }]);
+    } catch (e) {
+      setMessages((msgs) => [...msgs, { role: "advisor", text: "Sorry, there was an error." }]);
     }
     setInput("");
     setLoading(false);
   };
 
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-4">
-        <button className="float-right" onClick={onClose}>✕</button>
-        <h2 className="text-lg font-bold mb-2">Ask the Price Advisor</h2>
-        <div className="h-64 overflow-y-auto border p-2 mb-2 bg-gray-50">
-          {messages.map((msg, i) => (
-            <div key={i} className={msg.from === "user" ? "text-right" : "text-left"}>
-              {msg.from === "user" ? (
-                <span className="text-blue-600">You: {msg.text}</span>
-              ) : (
-                <span className="text-green-600">
-                  Bot: <ReactMarkdown>{msg.text}</ReactMarkdown>
-                </span>
-              )}
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            Chat with Price Advisor
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col h-[500px]">
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-2">
+              {messages.map((msg, i) => (
+                <div key={i} className={msg.role === "user" ? "text-right" : "text-left"}>
+                  <span className={msg.role === "user" ? "font-semibold text-primary" : "font-semibold text-green-700"}>
+                    {msg.role === "user" ? "You" : "Advisor"}:
+                  </span>{" "}
+                  <span>{msg.text}</span>
+                </div>
+              ))}
+              {loading && <div className="text-left text-gray-400">Advisor is typing...</div>}
             </div>
-          ))}
+          </ScrollArea>
+          <div className="p-4 border-t">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Type your message..."
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") sendMessage(); }}
+                disabled={loading}
+              />
+              <Button onClick={sendMessage} disabled={loading || !input.trim()}>Send</Button>
+            </div>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <input
-            className="flex-1 border rounded p-2"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && sendMessage()}
-            disabled={loading}
-            placeholder="Type your question..."
-          />
-          <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={sendMessage} disabled={loading}>
-            Send
-          </button>
-        </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
-} 
+}

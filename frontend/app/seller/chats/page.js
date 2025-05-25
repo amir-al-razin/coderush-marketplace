@@ -2,6 +2,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import ChatBox from "../../../components/ChatBox";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Sun, Moon } from "lucide-react";
+import { useDarkMode } from "../../../components/DarkModeProvider";
 
 export default function SellerChats() {
   const [user, setUser] = useState(null);
@@ -9,6 +16,7 @@ export default function SellerChats() {
   const [selectedChat, setSelectedChat] = useState(null);
   const [showChat, setShowChat] = useState(false);
   const [buyerInfo, setBuyerInfo] = useState({});
+  const { dark, setDark } = useDarkMode();
 
   useEffect(() => {
     async function fetchUserAndChats() {
@@ -44,34 +52,58 @@ export default function SellerChats() {
   }, [selectedChat]);
 
   return (
-    <div className="min-h-screen p-8 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
+    <div className="min-h-screen p-8 bg-background">
+      <div className="w-full flex justify-end items-center mb-4">
+        <Switch checked={dark} onCheckedChange={setDark} className="mr-2" />
+        {dark ? <Moon className="h-5 w-5 text-yellow-400" /> : <Sun className="h-5 w-5 text-yellow-500" />}
+      </div>
       <h1 className="text-2xl font-bold mb-6">Your Chats</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <h2 className="text-lg font-semibold mb-2">Chat Sessions</h2>
           <ul className="space-y-2">
             {chats.map((chat) => (
-              <li key={chat.id} className="bg-white/80 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-800 rounded p-3 flex flex-col">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">Product: {chat.products?.title || chat.product_id}</span>
-                  <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Buyer: {chat.buyers?.name || (chat.buyers?.email?.split("@")[0]) || chat.buyer_id}</span>
-                  <button className="ml-2 bg-blue-500 text-white px-3 py-1 rounded" onClick={() => { setSelectedChat(chat); setShowChat(true); }}>
-                    Open Chat
-                  </button>
-                </div>
-                <div className="text-xs text-gray-500 mt-1">Started: {new Date(chat.created_at).toLocaleString()}</div>
+              <li key={chat.id}>
+                <Card
+                  className="cursor-pointer transition-shadow hover:shadow-lg border border-muted bg-card text-card-foreground"
+                  onClick={() => { setSelectedChat(chat); setShowChat(true); }}
+                >
+                  <CardContent className="py-4 px-5 flex flex-col gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold">Product: {chat.products?.title || chat.product_id}</span>
+                      <span className="ml-2 text-sm text-muted-foreground">Buyer: {chat.buyers?.name || (chat.buyers?.email?.split("@")?.[0]) || chat.buyer_id}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">Started: {new Date(chat.created_at).toLocaleString()}</div>
+                  </CardContent>
+                </Card>
               </li>
             ))}
           </ul>
         </div>
         <div>
-          {showChat && selectedChat && (
-            <div className="bg-white rounded-lg shadow-lg p-4">
-              <button className="float-right text-xl" onClick={() => setShowChat(false)}>✕</button>
-              <div className="mb-2 font-semibold text-blue-700">Chat with: {buyerInfo.name || (buyerInfo.email?.split("@")[0]) || selectedChat.buyer_id}</div>
-              <ChatBox chatId={selectedChat.id} currentUserId={user.id} open={showChat} buyerName={buyerInfo.name || (buyerInfo.email?.split("@")[0]) || selectedChat.buyer_id} />
-            </div>
-          )}
+          <Dialog open={showChat && selectedChat} onOpenChange={setShowChat}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between">
+                  Chat with: {buyerInfo.name || (buyerInfo.email?.split("@")?.[0]) || selectedChat?.buyer_id}
+                  <Button variant="ghost" size="icon" onClick={() => setShowChat(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </DialogTitle>
+              </DialogHeader>
+              {showChat && selectedChat && (
+                <ChatBox 
+                  chatId={selectedChat.id} 
+                  currentUserId={user.id} 
+                  open={showChat} 
+                  sellerName={buyerInfo.name || (buyerInfo.email?.split("@")?.[0]) || selectedChat.buyer_id}
+                  buyerId={selectedChat.buyer_id}
+                  sellerId={selectedChat.seller_id}
+                  productId={selectedChat.product_id}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

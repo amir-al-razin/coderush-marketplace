@@ -2,6 +2,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Sun, Moon } from "lucide-react";
+import { useDarkMode } from "../../components/DarkModeProvider";
 
 export default function Login() {
   const [form, setForm] = useState({
@@ -12,6 +18,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const router = useRouter();
+  const { dark, setDark } = useDarkMode();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -45,21 +52,29 @@ export default function Login() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-16 p-6 bg-white rounded shadow">
-      <h2 className="text-2xl font-bold mb-4">Login</h2>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required className="border p-2 rounded" />
-        <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required className="border p-2 rounded" />
-        <button type="submit" className="bg-secondary text-secondary-foreground px-6 py-2 rounded font-medium mt-2" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
-        {error && <div className="text-red-600 mt-2">{error}</div>}
-        {success && <div className="text-green-600 mt-2">{success}</div>}
-      </form>
-      <div className="mt-4 text-center text-sm">
-        New here?{' '}
-        <a href="/register" className="text-blue-600 hover:underline">Register</a>
+    <div className="min-h-screen bg-background">
+      <div className="w-full flex justify-end items-center p-4">
+        <Switch checked={dark} onCheckedChange={setDark} className="mr-2" />
+        {dark ? <Moon className="h-5 w-5 text-yellow-400" /> : <Sun className="h-5 w-5 text-yellow-500" />}
       </div>
+      <Card className="max-w-md mx-auto mt-16 p-6">
+        <CardContent>
+          <h2 className="text-2xl font-bold mb-4">Login</h2>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <Input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required />
+            <Input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required />
+            <Button type="submit" className="mt-2" disabled={loading}>
+              {loading ? "Logging in..." : "Login"}
+            </Button>
+            {error && <div className="text-red-600 mt-2">{error}</div>}
+            {success && <div className="text-green-600 mt-2">{success}</div>}
+          </form>
+          <div className="mt-4 text-center text-sm">
+            New here?{' '}
+            <a href="/register" className="text-blue-600 hover:underline">Register</a>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 } 
